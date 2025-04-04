@@ -1,6 +1,8 @@
 // src/components/ApartmentList.jsx
 
 import React, { useEffect, useState } from 'react';
+import AddApartmentForm from "./AddApartmentForm";
+
 
 function ApartmentList() {
   const [apartments, setApartments] = useState([]);
@@ -31,23 +33,22 @@ function ApartmentList() {
 
   return (
     <div>
-      <h2>List of Apartments</h2>
-      {apartments.length === 0 ? (
-        <p>No apartments available.</p>
-      ) : (
-        <ul>
-          {apartments.map((apartment, index) => (
-            <li key={index}>
-              <h3>{apartment.name}</h3>
-              <p>{apartment.description}</p>
-              <p>Price: ${apartment.price}</p>
-              <p>Image: {apartment.image_url}</p>
-
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <h1>Liste des Appartements</h1>
+    <AddApartmentForm onApartmentAdded={(newApartment) => setApartments([...apartments, newApartment])} />
+    {apartments.length === 0 ? (
+      <p>No apartment available</p>
+    ) : (
+      <ul>
+        {apartments.map((apartment) => (
+          <li key={apartment.id}>
+            <h3>{apartment.title}</h3>
+            <p>{apartment.description}</p>
+            <p>Prix: {apartment.price}€</p>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
   );
 }
 

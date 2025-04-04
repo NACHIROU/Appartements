@@ -1,43 +1,49 @@
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
-import shutil
-import uuid
 from bson import ObjectId
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from motor.motor_asyncio import AsyncIOMotorDatabase
 import os
-from app.database import db, get_database
+import uuid
+import shutil
+from app.database import get_database
 from app.models.models import Apartement
-import pymongo
-import motor
 
 router = APIRouter()
 UPLOAD_DIR = "uploads/"
 os.makedirs(UPLOAD_DIR, exist_ok=True)  # Check if the folder exists
 
-@router.post("/upload/")
-async def upload(file: UploadFile = File(...)):
-    """Upload an image and return its URL."""
+
+@router.post("/appartements/")
+async def create_apartment(
+    apartment:Apartement,
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    """Créer un appartement avec son image."""
+    # Gestion de l'upload de l'image
+    file = apartment.image
     file_ext = file.filename.split(".")[-1].lower()
     allowed_extensions = {"png", "jpg", "jpeg", "svg"}
 
     if file_ext not in allowed_extensions:
-        raise HTTPException(status_code=400, detail="Invalid format")
-    
-    new_filename = f"{uuid.uuid4()}.{file_ext}"  # Generate a unique file name
+        raise HTTPException(status_code=400, detail="Invalid file format")
+
+    # Générer un nom unique pour l'image
+    new_filename = f"{uuid.uuid4()}.{file_ext}"
     file_path = os.path.join(UPLOAD_DIR, new_filename)
 
+    # Sauvegarder l'image sur le serveur
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    return {"image_url": f"/uploads/{new_filename}"}  # Corrected image path
+    # Enregistrer les informations de l'appartement avec l'URL de l'image
+    image_url = f"/uploads/{new_filename}"  # URL de l'image
 
+    apartment_data = apartment.dict()  # Convertir l'objet Pydantic en dictionnaire
+    apartment_data["image_url"] = image_url  # Ajouter l'URL de l'image
 
-@router.post("/appartements/")
-async def create_apartment(apartment: Apartement, db=Depends(get_database)):
-    """Create an apartment with its image."""
-    if not apartment.image_url:
-        raise HTTPException(status_code=400, detail="Image is required")
-    
-    result = await db.apartements.insert_one(apartment.model_dump())  # Corrected dict() usage
-    return {"id": str(result.inserted_id), "message": "Apartment added successfully"}
+    # Insérer l'appartement dans la base de données
+    result = await db.apartements.insert_one(apartment_data)
+
+    return {"id": str(result.inserted_id), "message": "Appartement ajouté avec succès", "image_url": image_url}
 
 @router.get("/appartements/")
 async def get_all_appartments(db = Depends(get_database)):
