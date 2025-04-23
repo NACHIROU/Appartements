@@ -14,5 +14,6 @@ client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URI)
 db = client[DATABASE_NAME]
 collection = db["appartements"]
 
+
 async def get_database():
     return db

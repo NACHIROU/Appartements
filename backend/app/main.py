@@ -1,19 +1,20 @@
+import os
 from app.routes.apartment import router as appartements_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 
 
 # This part is useful to allow the backend and frontend server run together
 origins = [
-    "http://localhost:5173",  
-    "http://127.0.0.1:5173", 
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins, 
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
     allow_headers=["*"],  # Allows all headers
@@ -21,3 +22,8 @@ app.add_middleware(
 
 # Inclure les routes
 app.include_router(appartements_router, prefix="/api", tags=["appartements"])
+app.mount(
+    "/uploads",
+    StaticFiles(directory=os.path.join(os.getcwd(), "uploads")),
+    name="uploads",
+)

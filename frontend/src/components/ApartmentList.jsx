@@ -1,55 +1,38 @@
-// src/components/ApartmentList.jsx
+import ApartmentCard from "./ApartmentCard"; // Facultatif si tu veux séparer encore plus
 
-import React, { useEffect, useState } from 'react';
-import AddApartmentForm from "./AddApartmentForm";
-
-
-function ApartmentList() {
-  const [apartments, setApartments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchApartments = async () => {
-      try {
-        const response = await fetch('http://127.0.0.1:8000/api/appartements/');
-        if (!response.ok) {
-          throw new Error('Failed to fetch apartments');
-        }
-        const data = await response.json();
-        setApartments(data);  // Assure-toi que les données sont correctes
-        setLoading(false);
-      } catch (err) {
-        setError(err.message);
-        setLoading(false);
-      }
-    };
-
-    fetchApartments();
-  }, []);
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-
+const ApartmentList = ({ apartments, onDelete, onEdit }) => {
   return (
-    <div>
-    <h1>Liste des Appartements</h1>
-    <AddApartmentForm onApartmentAdded={(newApartment) => setApartments([...apartments, newApartment])} />
-    {apartments.length === 0 ? (
-      <p>No apartment available</p>
-    ) : (
-      <ul>
-        {apartments.map((apartment) => (
-          <li key={apartment.id}>
-            <h3>{apartment.title}</h3>
-            <p>{apartment.description}</p>
-            <p>Prix: {apartment.price}€</p>
-          </li>
-        ))}
-      </ul>
-    )}
-  </div>
+    <div className="container">
+      {apartments.map((apartment) => (
+        <div key={apartment.id} className="apartment">
+          <h2>{apartment.name}</h2>
+          <p>{apartment.description}</p>
+          <p>Prix : {apartment.price} €</p>
+          <p>Pièces : {apartment.number_of_rooms}</p>
+          <img
+            src={`http://localhost:8000${apartment.image_url}`}
+            alt={apartment.name}
+          />
+        <div>
+            <button
+              className="btn btn-edit"
+              onClick={() => onEdit(apartment)}
+            >
+              Modifier
+            </button>
+
+            <button
+              className="btn btn-delete"
+              onClick={() => onDelete(apartment.id)}
+            >
+              Supprimer
+            </button>
+
+          </div>
+        </div>
+      ))}
+    </div>
   );
-}
+};
 
 export default ApartmentList;

@@ -1,30 +1,22 @@
-import { useState, useEffect } from "react";
-import ApartmentList from "./components/ApartmentList";
-import AddApartmentForm from "./components/AddApartmentForm";
+import { Routes, Route } from "react-router-dom";
+import ApartmentListPage from "./pages/ApartmentListPage";
+import AddApartmentPage from "./pages/AddApartmentFormPage";
+import Header from "./components/Header";
+import './App.css';
+
 
 function App() {
-  const [apartments, setApartments] = useState([]);
-
-  const fetchApartments = async () => {
-    try {
-      const response = await fetch("http://127.0.0.1:8000/api/appartements/");
-      if (!response.ok) throw new Error("Erreur lors de la récupération des appartements");
-      const data = await response.json();
-      setApartments(data);
-    } catch (error) {
-      console.error(error.message);
-    }
-  };
-
-  useEffect(() => {
-    fetchApartments();
-  }, []);
-
   return (
-    <div>
-      <ApartmentList apartments={apartments} />
+    <div className="min-h-screen bg-gray-50 font-sans">
+      <Header />
+      <div className="p-4 max-w-3xl mx-auto">
+        <Routes>
+          <Route path="/" element={<ApartmentListPage />} />
+          <Route path="/ajouter" element={<AddApartmentPage />} />
+          
+        </Routes>
+      </div>
     </div>
   );
 }
-
 export default App;
