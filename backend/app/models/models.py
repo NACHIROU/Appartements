@@ -11,7 +11,7 @@ class Apartement(BaseModel):
     description: str
     price: float
     room: Optional[int] = None
-    image_url: UploadFile = File(...)
+    image_urls: UploadFile = File(...)
 
 
 class AppartementUpdateModel(BaseModel):

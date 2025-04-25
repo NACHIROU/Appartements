@@ -9,6 +9,7 @@ import uuid
 import shutil
 from app.database import get_database
 from app.models.models import Apartement, AppartementUpdateModel
+from typing import List
 
 router = APIRouter()
 
@@ -17,43 +18,47 @@ UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
+
 @router.post("/appartements/")
 async def create_appartement(
     name: str = Form(...),
     description: str = Form(...),
     price: float = Form(...),
     number_of_rooms: int = Form(...),
-    image: UploadFile = File(...),
+    images: List[UploadFile] = File(...),
     db=Depends(get_database),
 ):
-    # Sauvegarder l'image avec un nom unique
-    ext = os.path.splitext(image.filename)[1]
-    filename = f"{uuid.uuid4()}{ext}"
-    filepath = os.path.join(UPLOAD_DIR, filename)
+    image_urls = []
 
-    with open(filepath, "wb") as buffer:
-        shutil.copyfileobj(image.file, buffer)
+    for image in images:
+        ext = os.path.splitext(image.filename)[1]
+        filename = f"{uuid.uuid4()}{ext}"
+        filepath = os.path.join(UPLOAD_DIR, filename)
+
+        with open(filepath, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+
+        image_urls.append(f"/uploads/{filename}")
 
     appartement = {
         "name": name,
         "description": description,
         "price": price,
         "number_of_rooms": number_of_rooms,
-        "image_url": f"/uploads/{filename}",
+        "image_urls": image_urls,  # <--- Remplace image_urls par une liste
     }
+
     result = await db.apartements.insert_one(appartement)
 
-    # À ce stade, tu pourrais insérer dans MongoDB avec l'URL de l'image
-    return JSONResponse(
-        {
-            "_id": str(result.inserted_id),
-            "name": name,
-            "description": description,
-            "price": price,
-            "number_of_rooms": number_of_rooms,
-            "image_url": f"/uploads/{filename}",
-        }
-    )
+    return JSONResponse({
+        "_id": str(result.inserted_id),
+        "name": name,
+        "description": description,
+        "price": price,
+        "number_of_rooms": number_of_rooms,
+        "image_urls": image_urls,
+    })
+
 
 
 @router.get("/appartements/")
@@ -85,7 +90,7 @@ async def update_apartment(
     description: str = Form(...),
     price: float = Form(...),
     number_of_rooms: int = Form(...),
-    image: Optional[UploadFile] = File(None),
+    images: Optional[List[UploadFile]] = File(None),
     db=Depends(get_database),
 ):
     try:
@@ -104,13 +109,22 @@ async def update_apartment(
         "number_of_rooms": number_of_rooms,
     }
 
-    if image:
-        image_path = f"/uploads/{image.filename}"
-        full_path = f"uploads/{image.filename}"
-        with open(full_path, "wb") as buffer:
-            shutil.copyfileobj(image.file, buffer)
+    if images:
+        image_urls = []
+        for image in images:
+            ext = os.path.splitext(image.filename)[1]
+            filename = f"{uuid.uuid4()}{ext}"
+            filepath = os.path.join(UPLOAD_DIR, filename)
 
-        update_data["image_url"] = image_path
+            with open(filepath, "wb") as buffer:
+                shutil.copyfileobj(image.file, buffer)
+
+            image_urls.append(f"/uploads/{filename}")
+
+        update_data["image_urls"] = image_urls
+    else:
+        # Conserver les images existantes
+        update_data["image_urls"] = existing_apartment.get("image_urls", [])
 
     result = await db.apartements.update_one({"_id": object_id}, {"$set": update_data})
 
@@ -118,6 +132,8 @@ async def update_apartment(
         raise HTTPException(status_code=304, detail="Aucune modification appliquée")
 
     return {"message": "Appartement mis à jour avec succès"}
+
+
 
 
 @router.delete("/appartements/{appartement_id}")

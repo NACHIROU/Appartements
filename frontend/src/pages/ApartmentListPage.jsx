@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import ApartmentList from "../components/ApartmentList";
 import { useNavigate } from "react-router-dom";
+import ApartmentList from "../components/ApartmentList";
 
 const ApartmentListPage = () => {
   const [apartments, setApartments] = useState([]);
   const navigate = useNavigate();
 
+  // Récupérer les appartements et leurs images
   const fetchApartments = async () => {
     try {
       const res = await fetch("http://127.0.0.1:8000/api/appartements/");
@@ -20,6 +21,7 @@ const ApartmentListPage = () => {
     fetchApartments();
   }, []);
 
+  // Fonction de suppression d'un appartement
   const handleDelete = async (id) => {
     const confirm = window.confirm("Es-tu sûr de vouloir supprimer cet appartement ?");
   
@@ -34,16 +36,16 @@ const ApartmentListPage = () => {
         throw new Error("Erreur lors de la suppression");
       }
   
-      await fetchApartments(); // Refresh après suppression
+      fetchApartments(); // Actualiser la liste après la suppression
     } catch (err) {
       console.error("Erreur lors de la suppression :", err);
     }
   };
 
+  // Fonction de modification d'un appartement
   const handleEdit = (apartment) => {
-    navigate("/ajouter", { state: { apartment } }); // on passe les infos à la page du formulaire
+    navigate("/ajouter", { state: { apartment } }); // Passer les infos à la page de modification
   };
-  
 
   return (
     <div>
@@ -51,14 +53,20 @@ const ApartmentListPage = () => {
         <h1 className="text-3xl font-bold text-gray-700">Appartements disponibles</h1>
         <button
           onClick={() => navigate("/ajouter")}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="btn-add-apartment"
         >
           Ajouter un appartement
         </button>
       </div>
 
-      <ApartmentList apartments={apartments} onDelete={handleDelete} onEdit={handleEdit}/>
+      {/* Affichage de la liste des appartements */}
+      <ApartmentList 
+        apartments={apartments} 
+        onDelete={handleDelete} 
+        onEdit={handleEdit}
+      />
     </div>
   );
 };
+
 export default ApartmentListPage;

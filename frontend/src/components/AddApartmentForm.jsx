@@ -5,41 +5,63 @@ import { useLocation } from "react-router-dom";
 const AddApartmentForm = ({ onApartmentAdded, clearEdit }) => {
   const location = useLocation();
   const apartmentToEdit = location.state?.apartment;
-  
+
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [numberOfRooms, setNumberOfRooms] = useState("");
-  const [image, setImage] = useState(null);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
 
   useEffect(() => {
     if (apartmentToEdit) {
-      setName(apartmentToEdit.name); // ✅
+      setName(apartmentToEdit.name);
       setDescription(apartmentToEdit.description);
       setPrice(apartmentToEdit.price);
-      setNumberOfRooms(apartmentToEdit.number_of_rooms); // ✅
-      setImage(null); // Doit être rechargée
+      setNumberOfRooms(apartmentToEdit.number_of_rooms);
+      setImageFiles([]); // Réinitialiser les fichiers image
+      setImagePreviews([]); // Réinitialiser les prévisualisations
+
+      // Si l'appartement a des images existantes, on les affiche
+      if (apartmentToEdit.image_urls && apartmentToEdit.image_urls.length > 0) {
+        setImagePreviews(apartmentToEdit.image_urls); // Ajouter les images existantes
+      }
     }
   }, [apartmentToEdit]);
+
   const clearForm = () => {
     setName("");
     setDescription("");
     setPrice("");
     setNumberOfRooms("");
-    setImage(null);
+    setImageFiles([]);
+    setImagePreviews([]);
+  };
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    setImageFiles(files);
+
+    // Prévisualiser les images
+    const previews = files.map((file) => URL.createObjectURL(file));
+    setImagePreviews(previews);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const formData = new FormData();
-    formData.append("name", name); // ✅ Correct maintenant
+    formData.append("name", name);
     formData.append("description", description);
     formData.append("price", price);
-    formData.append("number_of_rooms", numberOfRooms); // ✅ Correct maintenant
-    if (image) formData.append("image", image);
+    formData.append("number_of_rooms", numberOfRooms);
+
+    // Ajouter les images au formData si elles existent
+    imageFiles.forEach((file) => {
+      formData.append("images", file);
+    });
 
     try {
       let response;
@@ -61,7 +83,7 @@ const AddApartmentForm = ({ onApartmentAdded, clearEdit }) => {
       clearForm();
       clearEdit?.();
 
-      navigate("/"); // ✅ Redirection vers la liste
+      navigate("/"); // Redirection vers la liste
     } catch (error) {
       console.error(error.message);
     }
@@ -70,7 +92,7 @@ const AddApartmentForm = ({ onApartmentAdded, clearEdit }) => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 bg-white shadow-md p-6 rounded-2xl border border-gray-200 max-w-xl mx-auto mt-6"
+      className="apartment-form"
     >
       <h2 className="text-2xl font-bold text-gray-700 mb-4 text-center">
         {apartmentToEdit ? "Modifier un appartement" : "Ajouter un appartement"}
@@ -82,26 +104,25 @@ const AddApartmentForm = ({ onApartmentAdded, clearEdit }) => {
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
-        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-      />
+        className="champ-de-texte"
+      /><br/>
 
       <textarea
         placeholder="Description"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         required
-        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-      />
+        className="champ-de-texte"
+      /><br/>
 
-      <div className="grid grid-cols-2 gap-4">
         <input
           type="number"
           placeholder="Prix"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           required
-          className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
+          className="champ-de-texte"
+        /><br/>
 
         <input
           type="number"
@@ -109,15 +130,32 @@ const AddApartmentForm = ({ onApartmentAdded, clearEdit }) => {
           value={numberOfRooms}
           onChange={(e) => setNumberOfRooms(e.target.value)}
           required
-          className="p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-        />
+          className="champ-de-texte"
+        /><br/>
+
+      {/* Prévisualisation des images existantes */}
+      <div className="mb-4">
+        {imagePreviews.length > 0 && (
+          <div className="flex gap-2">
+            {imagePreviews.map((imageUrl, index) => (
+              <img
+                key={index}
+                src={`http://127.0.0.1:8000${imageUrl}`}
+                alt={`Prévisualisation ${index + 1}`}
+                className="h-20 object-cover rounded"
+              />
+            ))}
+          </div>
+        )}
       </div>
 
+      {/* Sélecteur de fichiers pour images */}
       <input
         type="file"
-        onChange={(e) => setImage(e.target.files[0])}
+        multiple
+        onChange={handleImageChange}
         className="w-full mt-2"
-      />
+      /><br/>
 
       <button
         type="submit"
